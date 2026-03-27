@@ -1,0 +1,107 @@
+services:
+  iris-primary:
+    image: containers.intersystems.com/intersystems/iris:latest-em
+    container_name: iris-primary
+    hostname: iris-primary
+    command: --key /opt/irisapp/iris.key
+    ports:
+      - "51972:1972"
+    environment:
+      - TZ=Europe/Paris
+      - ISC_CPF_MERGE_FILE=/opt/irisapp/iris.cpf
+      - ISC_DATA_DIRECTORY=/data
+    volumes:
+      - ./config/primary:/opt/irisapp
+      - ./cert:/opt/cert
+      - iris_primary_data:/data
+      - iris_primary_journal:/journal
+      - iris_primary_journal2:/journal2
+      - iris_primary_WIJ:/WIJ
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "iris", "session", "iris", "-U", "%SYS", "##class(%Api.Atelier).GetServer()"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  iris-async:
+    image: containers.intersystems.com/intersystems/iris:latest-em
+    container_name: iris-async
+    hostname: iris-async
+    command: --key /opt/irisapp/iris.key
+    ports:
+      - "51973:1972"
+    environment:
+      - TZ=Europe/Paris
+      - ISC_CPF_MERGE_FILE=/opt/irisapp/iris.cpf
+      - ISC_DATA_DIRECTORY=/data
+    volumes:
+      - ./config/async:/opt/irisapp
+      - ./cert:/opt/cert
+      - iris_async_data:/data
+      - iris_async_journal:/journal
+      - iris_async_journal2:/journal2
+      - iris_async_WIJ:/WIJ
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "iris", "session", "iris", "-U", "%SYS", "##class(%Api.Atelier).GetServer()"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  iris-arbiter:
+    image: containers.intersystems.com/intersystems/arbiter:latest-em
+    container_name: iris-arbiter
+    hostname: iris-arbiter
+    environment:
+      - TZ=Europe/Paris
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "ISCAgentUser"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  webgateway:
+    image: containers.intersystems.com/intersystems/webgateway:latest-em
+    container_name: iris-webgateway
+    hostname: iris-webgateway
+    ports:
+      - "50080:80"
+      - "50443:443"
+    environment:
+      - TZ=Europe/Paris
+      - ISC_CSP_CONF_FILE=/opt/webgateway/conf/CSP.conf
+      - ISC_CSP_INI_FILE=/opt/webgateway/conf/CSP.ini
+    volumes:
+      - ./config/webgateway:/opt/webgateway/conf
+      - ./config/webgateway/cert:/opt/cert
+    restart: unless-stopped
+
+volumes:
+  iris_primary_data:
+    external: true
+    name: ${VOLUME_NAME}iris_primary_data 
+  iris_async_data:
+    external: true
+    name: ${VOLUME_NAME}iris_async_data 
+  iris_primary_journal:
+    external: true
+    name: ${VOLUME_NAME}iris_primary_journal 
+  iris_async_journal:
+    external: true
+    name: ${VOLUME_NAME}iris_async_journal 
+  iris_primary_journal2:
+    external: true
+    name: ${VOLUME_NAME}iris_primary_journal2 
+  iris_async_journal2:
+    external: true
+    name: ${VOLUME_NAME}iris_async_journal2 
+  iris_primary_WIJ:
+    external: true
+    name: ${VOLUME_NAME}iris_primary_WIJ 
+  iris_async_WIJ:
+    external: true
+    name: ${VOLUME_NAME}iris_async_WIJ

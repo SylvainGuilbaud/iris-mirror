@@ -1,0 +1,1 @@
+openssl genrsa -out ./mirror-certs/iris1.key 2048
